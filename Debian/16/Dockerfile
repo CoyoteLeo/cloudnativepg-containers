@@ -49,9 +49,11 @@ RUN apt-get update && \
     rm groonga-apt-source-latest-$(lsb_release -c -s).deb && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      groonga-normalizer-mysql \
-      groonga-token-filter-stem \
-      groonga-tokenizer-mecab && \
+      "postgresql-${POSTGRESQL_VERSION}-pgdg-pgroonga=${PGROONGA_VERSION}" \
+      "groonga-normalizer-mysql" \
+      "groonga-token-filter-stem" \
+      "groonga-tokenizer-mecab" \
+    && \
     apt-get clean && \
 	rm -fr /tmp/* && \
 	rm -rf /var/lib/apt/lists/*
