@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_RELEASE: coyoteleo/postgres-containers
-  IMAGE_STAGING: coyoteleo/postgres-containers-testing
+  IMAGE_RELEASE: coyoteleo/cloudnativepg-containers
+  IMAGE_STAGING: coyoteleo/cloudnativepg-containers-testing
 
 jobs:
   generate-jobs:
