@@ -1,7 +1,6 @@
 FROM ghcr.io/cloudnative-pg/postgresql:16.2-debian
 ENV PG_MAJOR="16"
 
-ENV PGROONGA_VERSION="3.2.0-1"
 ENV TIMESCALEDB_MAJOR="2"
 
 USER root
@@ -18,13 +17,16 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         "timescaledb-${TIMESCALEDB_MAJOR}-postgresql-${PG_MAJOR}" \
 	&& \
+    apt-get --purge autoremove -y \
+        "lsb-release" \
+        "wget" \
+    && \
     apt-get clean && \
 	rm -fr /tmp/* && \
 	rm -rf /var/lib/apt/lists/*
 
-# extra dependencies for installing PGroonga on debian-bookworm
-RUN if [ "$(lsb_release -c -s)" = "bookworm" ]; then \
-    apt-get update && \
+# installing Groonga
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         "lsb-release" \
         "wget" \
@@ -32,30 +34,64 @@ RUN if [ "$(lsb_release -c -s)" = "bookworm" ]; then \
     wget https://apache.jfrog.io/artifactory/arrow/debian/apache-arrow-apt-source-latest-$(lsb_release -c -s).deb && \
     apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release -c -s).deb && \
     rm apache-arrow-apt-source-latest-$(lsb_release -c -s).deb && \
-    apt-get clean && \
-	rm -fr /tmp/* && \
-	rm -rf /var/lib/apt/lists/*; \
-    fi
-
-
-# intsall PGroonga for debian-bullseye
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        "lsb-release" \
-        "wget" \
-    && \
     wget https://packages.groonga.org/debian/groonga-apt-source-latest-$(lsb_release -c -s).deb && \
     apt-get install -y -V ./groonga-apt-source-latest-$(lsb_release -c -s).deb && \
     rm groonga-apt-source-latest-$(lsb_release -c -s).deb && \
-    apt-get update && \
     apt-get install -y --no-install-recommends \
-      "postgresql-${POSTGRESQL_VERSION}-pgdg-pgroonga=${PGROONGA_VERSION}" \
       "groonga-normalizer-mysql" \
       "groonga-token-filter-stem" \
       "groonga-tokenizer-mecab" \
+     && \
+    apt-get --purge autoremove -y \
+        "lsb-release" \
+        "wget" \
     && \
     apt-get clean && \
 	rm -fr /tmp/* && \
-	rm -rf /var/lib/apt/lists/*
+	rm -rf /var/lib/apt/lists/*;
+
+# intsall PGroonga
+RUN if [ "$(lsb_release -c -s)" = "bookworm" ]; then \
+    apt-get install -y --no-install-recommends \
+      "postgresql-${PG_MAJOR}-pgdg-pgroonga" \
+    ; \
+    fi
+
+# intsall PGroonga for debian-bullseye, build from source
+RUN if [ "$(lsb_release -c -s)" != "bookworm" ]; then \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        "postgresql-server-dev-${PG_MAJOR}" \
+        "libgroonga-dev" \
+        "libmsgpack-dev" \
+        "lsb-release" \
+        "wget" \
+        "make" \
+        "cmake" \
+        "gcc" \
+    && \
+    pkg-config --list-all && \
+    wget https://packages.groonga.org/source/pgroonga/pgroonga-latest.tar.gz && \
+    tar xvf pgroonga-latest.tar.gz && \
+    rm pgroonga-latest.tar.gz && \
+    cd "$(ls | grep pgroonga)" && \
+    make HAVE_MSGPACK=1 && \
+    make install && \
+    cd .. && \
+    rm -rf "$(ls | grep pgroonga)" && \
+    apt-get --purge autoremove -y \
+        "postgresql-server-dev-${PG_MAJOR}" \
+        "libgroonga-dev" \
+        "libmsgpack-dev" \
+        "lsb-release" \
+        "wget" \
+        "make" \
+        "cmake" \
+        "gcc" \
+    && \
+    apt-get clean && \
+	rm -fr /tmp/* && \
+	rm -rf /var/lib/apt/lists/* ; \
+    fi
 
 USER postgres

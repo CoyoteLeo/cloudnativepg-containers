@@ -1,7 +1,6 @@
 FROM ghcr.io/cloudnative-pg/postgresql:15.6-debian
 ENV PG_MAJOR="15"
 
-ENV PGROONGA_VERSION="3.2.0-1"
 ENV TIMESCALEDB_MAJOR="2"
 
 USER root
