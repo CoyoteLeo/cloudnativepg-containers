@@ -31,7 +31,10 @@ RUN if [ "$(lsb_release -c -s)" = "bookworm" ]; then \
     && \
     wget https://apache.jfrog.io/artifactory/arrow/debian/apache-arrow-apt-source-latest-$(lsb_release -c -s).deb && \
     apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release -c -s).deb && \
-    rm apache-arrow-apt-source-latest-$(lsb_release -c -s).deb; \
+    rm apache-arrow-apt-source-latest-$(lsb_release -c -s).deb && \
+    apt-get clean && \
+	rm -fr /tmp/* && \
+	rm -rf /var/lib/apt/lists/*; \
     fi
 
 
