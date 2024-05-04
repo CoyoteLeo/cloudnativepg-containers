@@ -86,9 +86,23 @@ RUN if [ "$(lsb_release -r -s)" -le 11 ]; then \
 	rm -rf /var/lib/apt/lists/* ; \
     fi
 
-RUN apt-get --purge autoremove -y \
-        "lsb-release" \
-        "wget" \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        "make" \
+        "gcc" \
+        "libc-dev" \
+        "postgresql-server-dev-${PG_MAJOR}" \
+    && \
+    wget https://github.com/EnterpriseDB/system_stats/archive/refs/tags/v2.1.tar.gz && \
+    tar -zxvf v2.1.tar.gz && \
+    cd system_stats-2.1 && \
+    PATH="/usr/local/pgsql/bin:$PATH" make USE_PGXS=1 && \
+    PATH="/usr/local/pgsql/bin:$PATH" make install USE_PGXS=1 && \
+    apt-get --purge autoremove -y \
+        "make" \
+        "gcc" \
+        "libc-dev" \
+        "postgresql-server-dev-${PG_MAJOR}" \
     && \
     apt-get clean && \
 	rm -fr /tmp/* && \

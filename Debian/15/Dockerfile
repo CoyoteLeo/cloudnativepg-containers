@@ -35,7 +35,6 @@ RUN if [ "$(lsb_release -c -s)" = "bookworm" ]; then \
 	rm -rf /var/lib/apt/lists/*; \
     fi
 
-
 # intsall PGroonga
 RUN wget https://packages.groonga.org/debian/groonga-apt-source-latest-$(lsb_release -c -s).deb && \
     apt-get install -y -V ./groonga-apt-source-latest-$(lsb_release -c -s).deb && \
@@ -51,9 +50,23 @@ RUN wget https://packages.groonga.org/debian/groonga-apt-source-latest-$(lsb_rel
 	rm -fr /tmp/* && \
 	rm -rf /var/lib/apt/lists/*
 
-RUN apt-get --purge autoremove -y \
-        "lsb-release" \
-        "wget" \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        "make" \
+        "gcc" \
+        "libc-dev" \
+        "postgresql-server-dev-${PG_MAJOR}" \
+    && \
+    wget https://github.com/EnterpriseDB/system_stats/archive/refs/tags/v2.1.tar.gz && \
+    tar -zxvf v2.1.tar.gz && \
+    cd system_stats-2.1 && \
+    PATH="/usr/local/pgsql/bin:$PATH" make USE_PGXS=1 && \
+    PATH="/usr/local/pgsql/bin:$PATH" make install USE_PGXS=1 && \
+    apt-get --purge autoremove -y \
+        "make" \
+        "gcc" \
+        "libc-dev" \
+        "postgresql-server-dev-${PG_MAJOR}" \
     && \
     apt-get clean && \
 	rm -fr /tmp/* && \

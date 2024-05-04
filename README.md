@@ -12,6 +12,7 @@ This Docker image is based on the official [CloudNative](https://github.com/clou
 - The image of this repository adds the following packages:
   - TimescaleDB
   - PGroonga
+  - system_stats
 
 ## Getting Started
 
