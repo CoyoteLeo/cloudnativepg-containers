@@ -1,5 +1,5 @@
-FROM ghcr.io/cloudnative-pg/postgresql:17-bookworm
-ENV PG_MAJOR="17"
+FROM ghcr.io/cloudnative-pg/postgresql:16-bookworm
+ENV PG_MAJOR="16"
 
 ENV TIMESCALEDB_MAJOR="2"
 
@@ -53,39 +53,6 @@ RUN if [ "$(lsb_release -r -s)" -gt 11 ]; then \
 	rm -rf /var/lib/apt/lists/*; \
     fi
 
-# intsall PGroonga for debian-bullseye, build from source
-RUN if [ "$(lsb_release -r -s)" -le 11 ]; then \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        "postgresql-server-dev-${PG_MAJOR}" \
-        "libgroonga-dev" \
-        "libmsgpack-dev" \
-        "make" \
-        "cmake" \
-        "gcc" \
-    && \
-    pkg-config --list-all && \
-    wget https://packages.groonga.org/source/pgroonga/pgroonga-latest.tar.gz && \
-    tar xvf pgroonga-latest.tar.gz && \
-    rm pgroonga-latest.tar.gz && \
-    cd "$(ls | grep pgroonga)" && \
-    make HAVE_MSGPACK=1 && \
-    make install && \
-    cd .. && \
-    rm -rf "$(ls | grep pgroonga)" && \
-    apt-get --purge autoremove -y \
-        "postgresql-server-dev-${PG_MAJOR}" \
-        "libgroonga-dev" \
-        "libmsgpack-dev" \
-        "make" \
-        "cmake" \
-        "gcc" \
-    && \
-    apt-get clean && \
-	rm -fr /tmp/* && \
-	rm -rf /var/lib/apt/lists/* ; \
-    fi
-
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         "make" \
@@ -93,9 +60,9 @@ RUN apt-get update && \
         "libc-dev" \
         "postgresql-server-dev-${PG_MAJOR}" \
     && \
-    wget https://github.com/EnterpriseDB/system_stats/archive/refs/tags/v2.1.tar.gz && \
-    tar -zxvf v2.1.tar.gz && \
-    cd system_stats-2.1 && \
+    wget https://github.com/EnterpriseDB/system_stats/archive/refs/tags/v3.2.tar.gz && \
+    tar -zxvf v3.2.tar.gz && \
+    cd system_stats-3.2 && \
     PATH="/usr/local/pgsql/bin:$PATH" make USE_PGXS=1 && \
     PATH="/usr/local/pgsql/bin:$PATH" make install USE_PGXS=1 && \
     apt-get --purge autoremove -y \

@@ -8,10 +8,16 @@
 #
 set -eu
 
+#ROOT_DIR=$(cd "$(dirname "$0")/../"; pwd)
+#source "${ROOT_DIR}/lib/repo_funcs.sh"
+
 # Define an optional aliases for some major versions
 declare -A aliases=(
 	[17]='latest'
 )
+
+# Define the current default distribution
+DEFAULT_DISTRO="bookworm"
 
 GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
 
@@ -39,38 +45,42 @@ join() {
 	printf -v out "${sep//%/%%}%s" "$@"
 	echo "${out#$sep}"
 }
-echo "debian_versions=${debian_versions}"
+
+generator() {
+	local os="$1"; shift
+	local distro="$1"; shift
+
+	cd "${BASE_DIRECTORY}"/"${os}"/
+	for version in "${debian_versions[@]}"; do
+
+		# Read versions from the definition file
+		versionFile="${CLOUDNATIVEPG_DIRECTORY}/Debian/${version}/${distro}/.versions.json"
+		postgresImageVersion=$(jq -r '.POSTGRES_IMAGE_VERSION | split("-") | .[0]' "${versionFile}")
+		releaseVersion=$(jq -r '.IMAGE_RELEASE_VERSION' "${versionFile}")
+
+		# Setting distribution tags: "major version", "full version", "full version with release"
+		# i.e. "14-bullseye", "14.2-bullseye", "14.2-1-bullseye"
+		fullTag="${postgresImageVersion}-${releaseVersion}-${distro}"
+		versionAliases=(
+				"${version}-${distro}"
+				"${postgresImageVersion}-${distro}"
+				"${fullTag}"
+			)
+
+		# Supported platforms for container images
+		platforms="linux/amd64,linux/arm64"
+
+		# Build the json entry
+		entries+=(
+			"{\"name\": \"Debian ${version} - ${distro}\", \"platforms\": \"$platforms\", \"dir\": \"Debian/$version/bookworm\", \"file\": \"Debian/$version/bookworm/Dockerfile\", \"distro\": \"$distro\", \"version\": \"$version\", \"tags\": [\"$(join "\", \"" "${versionAliases[@]}")\"], \"fullTag\": \"${fullTag}\"}"
+		)
+	done
+}
 
 entries=()
-for version in "${debian_versions[@]}"; do
 
-	# Read versions from the definition file
-	versionFile="${CLOUDNATIVEPG_DIRECTORY}/Debian/${version}/.versions.json"
-	postgresImageVersion=$(jq -r '.POSTGRES_IMAGE_VERSION | split("-") | .[0]' "${versionFile}")
-	releaseVersion=$(jq -r '.IMAGE_RELEASE_VERSION' "${versionFile}")
-
-	# Initial aliases are "major version", "optional alias", "full version with release"
-	# i.e. "14", "latest", "14.2-1", "14.2-debian","14.2"
-	versionAliases=(
-			"${version}"
-			${aliases[$version]:+"${aliases[$version]}"}
-			"${postgresImageVersion}-${releaseVersion}"
-			"${postgresImageVersion}"
-		)
-	# Add all the version prefixes between full version and major version
-	# i.e "13.2"
-	while [ "$postgresImageVersion" != "$version" ] && [ "${postgresImageVersion%[.-]*}" != "$postgresImageVersion" ]; do
-		versionAliases+=("$postgresImageVersion-debian")
-		postgresImageVersion="${postgresImageVersion%[.-]*}"
-	done
-    # Support platform for container images
-	platforms="linux/amd64,linux/arm64"
-
-	# Build the json entry
-	entries+=(
-		"{\"name\": \"Debian ${postgresImageVersion}\", \"platforms\": \"$platforms\", \"dir\": \"Debian/$version\", \"file\": \"Debian/$version/Dockerfile\", \"version\": \"$version\", \"tags\": [\"$(join "\", \"" "${versionAliases[@]}")\"]}"
-	)
-done
+# Debian
+generator "Debian" "bookworm"
 
 # Build the strategy as a JSON object
 strategy="{\"fail-fast\": false, \"matrix\": {\"include\": [$(join ', ' "${entries[@]}")]}}"
