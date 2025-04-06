@@ -10,7 +10,7 @@ set -eu
 
 # Define an optional aliases for some major versions
 declare -A aliases=(
-	[16]='latest'
+	[17]='latest'
 )
 
 GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
